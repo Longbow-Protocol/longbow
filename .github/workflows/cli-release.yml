@@ -46,6 +46,8 @@ jobs:
   npm:
     name: Publish to npm
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,5 +66,3 @@ jobs:
       - name: Publish (skips if NPM_TOKEN is not set)
         if: ${{ env.NODE_AUTH_TOKEN != '' }}
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
