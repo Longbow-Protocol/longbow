@@ -129,7 +129,9 @@ contract PositionManager is Ownable, ReentrancyGuard {
         uint256 liquidationBountyBps_,
         uint256 minCollateral_
     ) Ownable(owner_) {
-        if (long_ == address(0) || oracle_ == address(0) || liquiditySink_ == address(0)) revert ZeroAddress();
+        if (long_ == address(0) || oracle_ == address(0) || liquiditySink_ == address(0)) {
+            revert ZeroAddress();
+        }
         long = IERC20(long_);
         oracle = IPriceOracle(oracle_);
         liquiditySink = ILiquiditySink(liquiditySink_);

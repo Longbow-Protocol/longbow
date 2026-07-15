@@ -49,8 +49,7 @@ contract UniswapV2LiquiditySink is ILiquiditySink {
         path[0] = weth;
         path[1] = address(long);
 
-        uint256[] memory out =
-            router.swapExactETHForTokens{value: half}(0, path, address(this), block.timestamp);
+        uint256[] memory out = router.swapExactETHForTokens{value: half}(0, path, address(this), block.timestamp);
         uint256 longReceived = out[out.length - 1];
 
         long.forceApprove(address(router), longReceived);
@@ -58,9 +57,7 @@ contract UniswapV2LiquiditySink is ILiquiditySink {
         uint256 minLong = longReceived - (longReceived * slippageBps) / 10_000;
         uint256 minEth = rest - (rest * slippageBps) / 10_000;
 
-        router.addLiquidityETH{value: rest}(
-            address(long), longReceived, minLong, minEth, LP_BURN, block.timestamp
-        );
+        router.addLiquidityETH{value: rest}(address(long), longReceived, minLong, minEth, LP_BURN, block.timestamp);
 
         // Reset any residual approval.
         long.forceApprove(address(router), 0);

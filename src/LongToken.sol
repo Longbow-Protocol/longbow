@@ -14,10 +14,7 @@ contract LongToken is ERC20, ERC20Permit {
     /// @param initialSupply Total fixed supply, in token base units (18 decimals).
     /// @param recipient     Address that receives the full supply at genesis
     ///                       (the deployer, which then distributes per the plan).
-    constructor(uint256 initialSupply, address recipient)
-        ERC20("Longbow", "LONG")
-        ERC20Permit("Longbow")
-    {
+    constructor(uint256 initialSupply, address recipient) ERC20("Longbow", "LONG") ERC20Permit("Longbow") {
         require(recipient != address(0), "LONG: zero recipient");
         require(initialSupply > 0, "LONG: zero supply");
         _mint(recipient, initialSupply);
