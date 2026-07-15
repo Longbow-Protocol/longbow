@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
+/*//////////////////////////////////////////////////////////////////////////////
+                                    LONGBOW
+                 The leverage layer for $LONG on Robinhood Chain
+
+    Website   https://longbow-protocol.xyz
+    X         https://x.com/LongbowProtocol
+    GitHub    https://github.com/Longbow-Protocol
+//////////////////////////////////////////////////////////////////////////////*/
+
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 

@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
+/*//////////////////////////////////////////////////////////////////////////////
+                                    LONGBOW
+                 The leverage layer for $LONG on Robinhood Chain
+
+    Website   https://longbow-protocol.xyz
+    X         https://x.com/LongbowProtocol
+    GitHub    https://github.com/Longbow-Protocol
+//////////////////////////////////////////////////////////////////////////////*/
+
 import {IPriceOracle} from "../interfaces/IPriceOracle.sol";
 import {IUniswapV2Pair} from "../interfaces/IUniswapV2.sol";
 
