@@ -53,6 +53,10 @@ This is a monorepo:
 | [`cli/`](cli) | Self-custodial terminal client ([`longbow-cli`](cli/README.md)) |
 | [`keeper/`](keeper) | Off-chain liquidation keeper bot |
 
+> The Solidity core also has its own standalone home at
+> **[Longbow-Protocol/contracts](https://github.com/Longbow-Protocol/contracts)** — the canonical,
+> audit-friendly contracts repo. The `src/`, `test/`, and `script/` here are kept in sync with it.
+
 ## Quickstart (CLI)
 
 If you have [Node.js](https://nodejs.org) 18+:
