@@ -5,6 +5,7 @@ import { Faq } from "@/components/Faq";
 import { TokenAddress } from "@/components/TokenAddress";
 import { TerminalCta } from "@/components/TerminalCta";
 import { Quickstart } from "@/components/Quickstart";
+import { HomeStats } from "@/components/HomeStats";
 
 export default function Home() {
   return (
@@ -36,11 +37,8 @@ export default function Home() {
           <div className="mt-6">
             <TokenAddress />
           </div>
-          <div className="label mt-8 flex flex-wrap gap-x-6 gap-y-2">
-            <span>NETWORK: ROBINHOOD CHAIN</span>
-            <span>CHAIN ID: 4663</span>
-            <span>GAS: ETH</span>
-            <span>SHORTS: DISABLED</span>
+          <div className="mt-8">
+            <HomeStats />
           </div>
         </section>
 

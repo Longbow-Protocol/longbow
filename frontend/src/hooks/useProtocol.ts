@@ -1,7 +1,9 @@
 "use client";
 
 import { useReadContracts } from "wagmi";
-import { addresses, isConfigured, oracleAbi, positionManagerAbi } from "@/lib/contracts";
+import { addresses, erc20Abi, isConfigured, oracleAbi, positionManagerAbi } from "@/lib/contracts";
+
+const WAD = 10n ** 18n;
 
 export type Protocol = {
   priceWad?: bigint;
@@ -12,6 +14,9 @@ export type Protocol = {
   availableReserve?: bigint;
   totalEarmarked?: bigint;
   nextPositionId?: bigint;
+  tokenSupply?: bigint;
+  /** Fully-diluted market cap in ETH (WAD): totalSupply × price. */
+  marketCapWad?: bigint;
   isLoading: boolean;
   configured: boolean;
 };
@@ -19,6 +24,7 @@ export type Protocol = {
 export function useProtocol(): Protocol {
   const pm = addresses.positionManager;
   const oracle = addresses.oracle;
+  const long = addresses.long;
   const configured = isConfigured(pm) && isConfigured(oracle);
 
   const { data, isLoading } = useReadContracts({
@@ -32,14 +38,22 @@ export function useProtocol(): Protocol {
       { address: pm, abi: positionManagerAbi, functionName: "availableReserve" },
       { address: pm, abi: positionManagerAbi, functionName: "totalEarmarked" },
       { address: pm, abi: positionManagerAbi, functionName: "nextPositionId" },
+      { address: long, abi: erc20Abi, functionName: "totalSupply" },
     ],
   });
 
   const val = (i: number) =>
     data?.[i]?.status === "success" ? (data[i].result as bigint) : undefined;
 
+  const priceWad = val(0);
+  const tokenSupply = val(8);
+  const marketCapWad =
+    priceWad !== undefined && tokenSupply !== undefined
+      ? (tokenSupply * priceWad) / WAD
+      : undefined;
+
   return {
-    priceWad: val(0),
+    priceWad,
     maxMultiplierWad: val(1),
     minCollateral: val(2),
     maintenanceMarginBps: val(3),
@@ -47,6 +61,8 @@ export function useProtocol(): Protocol {
     availableReserve: val(5),
     totalEarmarked: val(6),
     nextPositionId: val(7),
+    tokenSupply,
+    marketCapWad,
     isLoading,
     configured,
   };
