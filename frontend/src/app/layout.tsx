@@ -41,13 +41,13 @@ export const metadata: Metadata = {
     siteName: "Longbow",
     title: "Longbow — The leverage layer for $LONG",
     description,
-    images: [{ url: "/longbow-icon.png", alt: "Longbow" }],
+    images: [{ url: "/longbow-og.png", width: 1536, height: 1024, alt: "Longbow — the leverage layer for $LONG" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Longbow — The leverage layer for $LONG",
     description,
-    images: ["/longbow-icon.png"],
+    images: ["/longbow-og.png"],
   },
   icons: {
     icon: "/longbow-icon.png",
