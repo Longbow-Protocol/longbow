@@ -52,7 +52,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 border-t border-[var(--color-border)] pt-6">
-          <span className="label">© 2026 LONGBOW PROTOCOL</span>
+          <span className="label">© 2026 LONGBOW FINANCE</span>
         </div>
       </div>
     </footer>

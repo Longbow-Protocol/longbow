@@ -5,9 +5,9 @@ pragma solidity 0.8.24;
                                     LONGBOW
                  The leverage layer for $LONG on Robinhood Chain
 
-    Website   https://longbow-protocol.xyz
+    Website   https://longbowfi.xyz
     X         https://x.com/LongbowProtocol
-    GitHub    https://github.com/Longbow-Protocol
+    GitHub    https://github.com/Longbow-Finance
 //////////////////////////////////////////////////////////////////////////////*/
 
 import {IPriceOracle} from "../interfaces/IPriceOracle.sol";

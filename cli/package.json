@@ -11,10 +11,10 @@
     "defi",
     "cli"
   ],
-  "homepage": "https://github.com/Longbow-Protocol/longbow#readme",
+  "homepage": "https://github.com/Longbow-Finance/longbow#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Longbow-Protocol/longbow.git",
+    "url": "https://github.com/Longbow-Finance/longbow.git",
     "directory": "cli"
   },
   "bin": {

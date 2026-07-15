@@ -7,7 +7,7 @@
 Deposit ETH, pick a multiplier, and earn `$LONG` as the price climbs.
 No shorts. No borrowing. No tokens up front.
 
-[Website](https://longbow-protocol.xyz) · [Dashboard](https://longbow-protocol.xyz/dashboard) · [Litepaper](https://longbow-protocol.xyz/litepaper) · [Explorer](https://robinhoodchain.blockscout.com)
+[Website](https://longbowfi.xyz) · [Dashboard](https://longbowfi.xyz/dashboard) · [Litepaper](https://longbowfi.xyz/litepaper) · [Explorer](https://robinhoodchain.blockscout.com)
 
 </div>
 
@@ -38,7 +38,7 @@ reward(P)   = maxReward × (P − P0) / P               (0 at entry, → maxRewa
 4. **Exit anytime** — reclaim equity in ETH plus your reward tokens.
 5. **Liquidation** — fall to the maintenance margin and anyone can liquidate you for a bounty; the rest of your collateral joins the pool.
 
-Full mechanism, worked examples, and architecture are in the [litepaper](https://longbow-protocol.xyz/litepaper).
+Full mechanism, worked examples, and architecture are in the [litepaper](https://longbowfi.xyz/litepaper).
 
 ## Repository layout
 
@@ -54,7 +54,7 @@ This is a monorepo:
 | [`keeper/`](keeper) | Off-chain liquidation keeper bot |
 
 > The Solidity core also has its own standalone home at
-> **[Longbow-Protocol/contracts](https://github.com/Longbow-Protocol/contracts)** — the canonical,
+> **[Longbow-Finance/contracts](https://github.com/Longbow-Finance/contracts)** — the canonical,
 > audit-friendly contracts repo. The `src/`, `test/`, and `script/` here are kept in sync with it.
 
 ## Quickstart (CLI)
@@ -65,7 +65,7 @@ If you have [Node.js](https://nodejs.org) 18+:
 npx longbow-cli
 ```
 
-Or download a standalone binary (no Node needed) from [Releases](https://github.com/Longbow-Protocol/longbow/releases).
+Or download a standalone binary (no Node needed) from [Releases](https://github.com/Longbow-Finance/longbow/releases).
 Your private key never leaves your machine — the CLI signs locally. See [`cli/README.md`](cli/README.md).
 
 ## Development

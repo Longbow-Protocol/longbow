@@ -177,7 +177,7 @@ function BlockView({ block }: { block: Block }) {
 
 export function LitepaperDocument() {
   return (
-    <Document title={LITEPAPER_META.title} author="Longbow Protocol">
+    <Document title={LITEPAPER_META.title} author="Longbow Finance">
       <Page size="A4" style={s.page}>
         <View style={s.brandRow} fixed={false}>
           <View style={s.brandMark} />
@@ -209,7 +209,7 @@ export function LitepaperDocument() {
         ))}
 
         <View style={s.footer} fixed>
-          <Text>LONGBOW PROTOCOL · LITEPAPER</Text>
+          <Text>LONGBOW FINANCE · LITEPAPER</Text>
           <Text
             render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
           />

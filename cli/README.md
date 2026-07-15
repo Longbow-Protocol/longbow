@@ -24,7 +24,7 @@ npx longbow-cli stats      # a specific command
 ```
 
 Prefer not to install Node at all? Download a **standalone binary** for your OS
-from the [releases page](https://github.com/Longbow-Protocol/longbow/releases) — a single
+from the [releases page](https://github.com/Longbow-Finance/longbow/releases) — a single
 executable, no runtime required:
 
 ```bash

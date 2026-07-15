@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const REPO_URL = "https://github.com/Longbow-Protocol/longbow";
+const REPO_URL = "https://github.com/Longbow-Finance/longbow";
 
 type Line =
   | { kind: "comment"; text: string }
@@ -11,7 +11,7 @@ type Line =
 
 const LINES: Line[] = [
   { kind: "comment", text: "# 1 · grab the source from github" },
-  { kind: "cmd", text: "git clone https://github.com/Longbow-Protocol/longbow.git" },
+  { kind: "cmd", text: "git clone https://github.com/Longbow-Finance/longbow.git" },
   { kind: "comment", text: "# 2 · hop into the cli" },
   { kind: "cmd", text: "cd longbow/cli" },
   { kind: "comment", text: "# 3 · launch it — no build step, keys stay on your machine" },

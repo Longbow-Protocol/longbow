@@ -40,7 +40,7 @@ export function Header() {
             <LongbowMark />
             <div className="leading-none">
               <div className="text-base font-bold tracking-tight">LONGBOW</div>
-              <div className="label mt-1">PROTOCOL</div>
+              <div className="label mt-1">FINANCE</div>
             </div>
           </Link>
 

@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 const INSTALL_CMD = "npx longbow-cli";
-const RELEASES_URL = "https://github.com/Longbow-Protocol/longbow/releases";
-const REPO_URL = "https://github.com/Longbow-Protocol/longbow/tree/main/cli";
+const RELEASES_URL = "https://github.com/Longbow-Finance/longbow/releases";
+const REPO_URL = "https://github.com/Longbow-Finance/longbow/tree/main/cli";
 
 export function TerminalCta() {
   const [copied, setCopied] = useState(false);

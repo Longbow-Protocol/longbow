@@ -20,7 +20,7 @@ const description =
   "Deposit ETH, pick a multiplier, and earn $LONG rewards as the price rises. Losses feed the pool. No shorts, no borrowing, no tokens up front.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://longbow-protocol.xyz"),
+  metadataBase: new URL("https://longbowfi.xyz"),
   title: {
     default: "Longbow — The leverage layer for $LONG",
     template: "%s · Longbow",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    url: "https://longbow-protocol.xyz",
+    url: "https://longbowfi.xyz",
     siteName: "Longbow",
     title: "Longbow — The leverage layer for $LONG",
     description,
