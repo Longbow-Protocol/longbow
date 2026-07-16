@@ -65,7 +65,7 @@ const ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "How is the price determined? Can it be manipulated?",
-    a: "The protocol uses a Uniswap V2 time-weighted average price (TWAP) oracle, which averages price over a window. This makes it resistant to single-block and flash-loan manipulation that could otherwise trigger unfair liquidations.",
+    a: "The protocol reads the Uniswap V3 pool's built-in time-weighted average price (TWAP) oracle, which averages the price over a window. This makes it resistant to single-block and flash-loan manipulation that could otherwise trigger unfair liquidations.",
   },
   {
     q: "Is the reward reserve always solvent?",

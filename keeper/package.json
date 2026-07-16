@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Keeper bot for Longbow: refreshes the TWAP oracle and liquidates unhealthy positions.",
+  "description": "Keeper bot for Longbow: scans and liquidates unhealthy positions.",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",

@@ -64,7 +64,7 @@ export const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "50% seeds the $LONG / WETH liquidity pool on a Uniswap V2-style DEX, establishing the market price.",
+          "50% seeds the $LONG / WETH Uniswap V3 pool (1% fee tier) as a full-range position, establishing the market price.",
           "50% is transferred to the position contract, where it forms the reward reserve that pays profitable longs.",
         ],
       },
@@ -85,9 +85,9 @@ export const SECTIONS: Section[] = [
         items: [
           "`LongToken` — the fixed-supply ERC-20. Mints once at genesis; no mint function thereafter.",
           "`PositionManager` — the core contract. Holds the reward reserve, opens/closes positions, computes rewards, equity and liquidation prices, and processes liquidations.",
-          "`UniswapV2TwapOracle` — a time-weighted price oracle returning ETH per $LONG, resistant to flash-loan manipulation.",
-          "`UniswapV2LiquiditySink` — receives forfeited collateral and locks it into the liquidity pool permanently.",
-          "Keeper — an off-chain bot that refreshes the oracle and liquidates unhealthy positions for a bounty.",
+          "`UniswapV3TwapOracle` — reads the pool's built-in time-weighted average price (`observe()`) and returns ETH per $LONG, resistant to flash-loan manipulation.",
+          "`UniswapV3LiquiditySink` — receives forfeited collateral and adds it to a permanently locked full-range V3 position.",
+          "Keeper — an off-chain bot that liquidates unhealthy positions for a bounty. The V3 TWAP needs no keeper upkeep.",
         ],
       },
       {
@@ -190,7 +190,7 @@ export const SECTIONS: Section[] = [
     blocks: [
       {
         type: "p",
-        text: "Forfeited collateral — from liquidations and from the shortfall on underwater closes — is routed to a liquidity sink. The sink swaps half the ETH for $LONG, adds both legs as liquidity, and sends the resulting LP tokens to a burn address. The liquidity can therefore never be withdrawn by anyone, exactly matching the rule that a lost deposit permanently supports the pool.",
+        text: "Forfeited collateral — from liquidations and from the shortfall on underwater closes — is routed to a liquidity sink. The sink wraps the ETH, swaps half for $LONG, and adds both legs to a single full-range Uniswap V3 position that it holds forever. The contract exposes no way to withdraw or reduce that liquidity, exactly matching the rule that a lost deposit permanently supports the pool. (A future dedicated locker will let the accrued 1% trading fees on that position be claimed, without ever unlocking the principal.)",
       },
     ],
   },
@@ -246,7 +246,7 @@ export const SECTIONS: Section[] = [
     blocks: [
       {
         type: "p",
-        text: "All prices come from a Uniswap V2 time-weighted average price (TWAP) oracle, which averages the pool price over a fixed window and returns ETH per $LONG as an 18-decimal fixed-point value. Averaging over time makes the price resistant to single-block and flash-loan manipulation that could otherwise trigger unfair liquidations. The oracle must be refreshed periodically; keepers perform this alongside liquidations.",
+        text: "All prices come from the Uniswap V3 pool's built-in time-weighted average price (TWAP) oracle. The contract reads the pool's cumulative tick over a fixed window via `observe()` and converts it to ETH per $LONG as an 18-decimal fixed-point value. Averaging over time makes the price resistant to single-block and flash-loan manipulation that could otherwise trigger unfair liquidations. Because the pool accumulates observations itself, the oracle is read passively on-chain and needs no keeper upkeep — the deployment simply grows the pool's observation cardinality so a full window of history is retained.",
       },
     ],
   },
@@ -274,7 +274,7 @@ export const SECTIONS: Section[] = [
         type: "list",
         items: [
           "Liquidations — anyone can liquidate an unhealthy position and earn the bounty, so under-margined positions are cleared promptly.",
-          "Oracle updates — the TWAP must be poked to advance its window; keepers do this while scanning for liquidations.",
+          "No oracle upkeep — the Uniswap V3 TWAP is read passively from the pool, so there is nothing to poke between liquidations.",
         ],
       },
       {

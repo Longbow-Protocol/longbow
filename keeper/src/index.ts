@@ -1,11 +1,12 @@
 /**
  * Longbow keeper bot.
  *
- * Two jobs, run on a fixed interval:
- *   1. Keep the TWAP fresh by calling `oracle.update()` (skipped automatically
- *      when the averaging period has not yet elapsed).
- *   2. Scan every open position and `liquidate()` any that are below their
- *      liquidation price, earning the keeper bounty.
+ * One job, run on a fixed interval: scan every open position and `liquidate()`
+ * any that are below their liquidation price, earning the keeper bounty.
+ *
+ * The price oracle is a Uniswap V3 TWAP read passively via the pool's built-in
+ * `observe()`, so — unlike the old V2 design — there is no `oracle.update()` to
+ * keep warm here.
  *
  * Configure via a `.env` file (see `.env.example`). Run with `npm start`.
  */
@@ -34,7 +35,6 @@ const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS ?? 60_000);
 
 const account = privateKeyToAccount(required("PRIVATE_KEY") as Hex);
 const POSITION_MANAGER = required("POSITION_MANAGER") as Address;
-const ORACLE = required("ORACLE") as Address;
 
 const robinhoodChain = defineChain({
   id: CHAIN_ID,
@@ -66,28 +66,7 @@ const positionManagerAbi = [
   },
 ] as const;
 
-const oracleAbi = [
-  { type: "function", name: "update", stateMutability: "nonpayable", inputs: [], outputs: [] },
-] as const;
-
 // --- Jobs -------------------------------------------------------------------
-
-async function updateOracle(): Promise<void> {
-  try {
-    const { request } = await publicClient.simulateContract({
-      address: ORACLE,
-      abi: oracleAbi,
-      functionName: "update",
-      account,
-    });
-    const hash = await walletClient.writeContract(request);
-    console.log(`[oracle] update sent: ${hash}`);
-  } catch (err) {
-    // Most commonly PeriodNotElapsed() — nothing to do this tick.
-    const msg = (err as { shortMessage?: string }).shortMessage ?? String(err);
-    if (!/PeriodNotElapsed/.test(msg)) console.warn(`[oracle] update skipped: ${msg}`);
-  }
-}
 
 async function scanAndLiquidate(): Promise<void> {
   const next = (await publicClient.readContract({
@@ -130,7 +109,6 @@ async function scanAndLiquidate(): Promise<void> {
 }
 
 async function tick(): Promise<void> {
-  await updateOracle();
   await scanAndLiquidate();
 }
 

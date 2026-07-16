@@ -6,34 +6,46 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {LongToken} from "../src/LongToken.sol";
 import {PositionManager} from "../src/PositionManager.sol";
-import {UniswapV2TwapOracle} from "../src/oracle/UniswapV2TwapOracle.sol";
-import {UniswapV2LiquiditySink} from "../src/periphery/UniswapV2LiquiditySink.sol";
-import {IUniswapV2Router02, IUniswapV2Factory} from "../src/interfaces/IUniswapV2.sol";
+import {UniswapV3TwapOracle} from "../src/oracle/UniswapV3TwapOracle.sol";
+import {UniswapV3LiquiditySink} from "../src/periphery/UniswapV3LiquiditySink.sol";
+import {INonfungiblePositionManager, IUniswapV3Pool, IWETH9} from "../src/interfaces/IUniswapV3.sol";
+import {FullMath} from "../src/libraries/FullMath.sol";
+import {TickMath} from "../src/libraries/TickMath.sol";
 
-/// @notice Deploys the Longbow contract suite to Robinhood Chain (or a fork).
+/// @notice Deploys the Longbow contract suite to Robinhood Chain (or a fork),
+///         using Uniswap **V3** for liquidity and pricing.
 ///
 /// Flow:
 ///   1. Deploy LONG with full supply minted to the deployer.
-///   2. Seed the Uniswap V2 LONG/WETH pool with 50% of supply + SEED_ETH,
-///      which sets the genesis price P0. LP tokens go to the deployer.
-///   3. Deploy the TWAP oracle over the freshly created pair.
-///   4. Deploy the UniswapV2LiquiditySink (locks liquidated collateral forever).
-///   5. Deploy the PositionManager and transfer the remaining 50% as its reserve.
+///   2. Create + initialize the Uniswap V3 LONG/WETH pool at the genesis price
+///      P0 = SEED_ETH / (TOTAL_SUPPLY / 2), then grow its observation cardinality
+///      so the TWAP oracle has history to average over.
+///   3. Mint a full-range seed position (50% of supply + SEED_ETH). The LP NFT
+///      goes to the deployer (you keep and manage your own seed liquidity).
+///   4. Deploy the V3 TWAP oracle over the pool.
+///   5. Deploy the UniswapV3LiquiditySink (locks liquidated collateral forever).
+///   6. Deploy the PositionManager and transfer the remaining 50% as its reserve.
 ///
 /// Required env:
-///   PRIVATE_KEY           deployer key
-///   UNISWAP_V2_ROUTER     Uniswap V2 router address on Robinhood Chain
-/// Optional env (sensible defaults shown in code):
-///   TOTAL_SUPPLY, SEED_ETH, TWAP_PERIOD, MAX_MULTIPLIER_WAD,
-///   MAINTENANCE_MARGIN_BPS, LIQUIDATION_BOUNTY_BPS, MIN_COLLATERAL, SINK_SLIPPAGE_BPS
+///   PRIVATE_KEY   deployer key
+/// Optional env (sensible defaults shown in code — VERIFY the Uniswap V3
+/// addresses on Blockscout before broadcasting):
+///   TOTAL_SUPPLY, SEED_ETH, UNISWAP_V3_POSITION_MANAGER, UNISWAP_V3_SWAP_ROUTER,
+///   WETH, POOL_FEE, OBSERVATION_CARDINALITY, TWAP_PERIOD, MAX_MULTIPLIER_WAD,
+///   MAINTENANCE_MARGIN_BPS, LIQUIDATION_BOUNTY_BPS, MIN_COLLATERAL,
+///   SINK_SLIPPAGE_BPS
 contract Deploy is Script {
     struct Config {
         uint256 pk;
         address deployer;
         uint256 totalSupply;
         uint256 seedEth;
-        address router;
-        uint256 twapPeriod;
+        address positionManager;
+        address swapRouter;
+        address weth;
+        uint24 poolFee;
+        uint16 observationCardinality;
+        uint32 twapPeriod;
         uint256 maxMultiplierWad;
         uint256 maintenanceMarginBps;
         uint256 liquidationBountyBps;
@@ -46,9 +58,16 @@ contract Deploy is Script {
         c.deployer = vm.addr(c.pk);
         c.totalSupply = vm.envOr("TOTAL_SUPPLY", uint256(1_000_000_000 ether));
         c.seedEth = vm.envOr("SEED_ETH", uint256(10 ether));
-        // Confirmed Uniswap V2 router on Robinhood Chain (4663); override via env.
-        c.router = vm.envOr("UNISWAP_V2_ROUTER", address(0x89e5DB8B5aA49aA85AC63f691524311AEB649eba));
-        c.twapPeriod = vm.envOr("TWAP_PERIOD", uint256(30 minutes));
+
+        // Uniswap V3 on Robinhood Chain (4663) — VERIFY on Blockscout before use.
+        c.positionManager =
+            vm.envOr("UNISWAP_V3_POSITION_MANAGER", address(0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3));
+        c.swapRouter = vm.envOr("UNISWAP_V3_SWAP_ROUTER", address(0xCaf681a66D020601342297493863E78C959E5cb2));
+        c.weth = vm.envOr("WETH", address(0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73));
+        c.poolFee = uint24(vm.envOr("POOL_FEE", uint256(10_000))); // 1% tier
+        c.observationCardinality = uint16(vm.envOr("OBSERVATION_CARDINALITY", uint256(200)));
+
+        c.twapPeriod = uint32(vm.envOr("TWAP_PERIOD", uint256(30 minutes)));
         c.maxMultiplierWad = vm.envOr("MAX_MULTIPLIER_WAD", uint256(10 ether));
         c.maintenanceMarginBps = vm.envOr("MAINTENANCE_MARGIN_BPS", uint256(500));
         c.liquidationBountyBps = vm.envOr("LIQUIDATION_BOUNTY_BPS", uint256(100));
@@ -64,11 +83,11 @@ contract Deploy is Script {
 
         LongToken long = new LongToken(c.totalSupply, c.deployer);
 
-        address pair = _seedPool(c, address(long), half);
+        address pool = _createAndSeedPool(c, address(long), half);
 
-        UniswapV2TwapOracle oracle =
-            new UniswapV2TwapOracle(pair, address(long) < IUniswapV2Router02(c.router).WETH(), c.twapPeriod);
-        UniswapV2LiquiditySink sink = new UniswapV2LiquiditySink(c.router, address(long), c.sinkSlippageBps);
+        UniswapV3TwapOracle oracle = new UniswapV3TwapOracle(pool, address(long), c.twapPeriod);
+        UniswapV3LiquiditySink sink =
+            new UniswapV3LiquiditySink(c.swapRouter, c.positionManager, pool, address(long), c.sinkSlippageBps);
 
         PositionManager pm = new PositionManager(
             address(long),
@@ -85,17 +104,73 @@ contract Deploy is Script {
         vm.stopBroadcast();
 
         console2.log("LongToken:       ", address(long));
-        console2.log("Pair:            ", pair);
+        console2.log("V3 Pool:         ", pool);
         console2.log("Oracle:          ", address(oracle));
         console2.log("LiquiditySink:   ", address(sink));
         console2.log("PositionManager: ", address(pm));
         console2.log("Reserve (LONG):  ", long.balanceOf(address(pm)));
     }
 
-    function _seedPool(Config memory c, address long, uint256 amount) internal returns (address pair) {
-        IUniswapV2Router02 uni = IUniswapV2Router02(c.router);
-        IERC20(long).approve(c.router, amount);
-        uni.addLiquidityETH{value: c.seedEth}(long, amount, amount, c.seedEth, c.deployer, block.timestamp);
-        pair = IUniswapV2Factory(uni.factory()).getPair(long, uni.WETH());
+    /// @dev Creates + initializes the V3 pool at the genesis price, grows the
+    ///      observation cardinality, and mints the full-range seed position.
+    function _createAndSeedPool(Config memory c, address long, uint256 half) internal returns (address pool) {
+        (address token0, address token1) = long < c.weth ? (long, c.weth) : (c.weth, long);
+
+        pool = INonfungiblePositionManager(c.positionManager)
+            .createAndInitializePoolIfNecessary(
+                token0,
+                token1,
+                c.poolFee,
+                long < c.weth ? _encodeSqrtPriceX96(c.seedEth, half) : _encodeSqrtPriceX96(half, c.seedEth)
+            );
+        IUniswapV3Pool(pool).increaseObservationCardinalityNext(c.observationCardinality);
+
+        _mintSeedPosition(c, long, half, pool);
+    }
+
+    /// @dev Wraps the seed ETH and mints the full-range seed position to the deployer.
+    function _mintSeedPosition(Config memory c, address long, uint256 half, address pool) internal {
+        IWETH9(c.weth).deposit{value: c.seedEth}();
+        IERC20(long).approve(c.positionManager, half);
+        IERC20(c.weth).approve(c.positionManager, c.seedEth);
+
+        int24 spacing = IUniswapV3Pool(pool).tickSpacing();
+
+        INonfungiblePositionManager(c.positionManager)
+            .mint(
+                INonfungiblePositionManager.MintParams({
+                token0: long < c.weth ? long : c.weth,
+                token1: long < c.weth ? c.weth : long,
+                fee: c.poolFee,
+                tickLower: (TickMath.MIN_TICK / spacing) * spacing,
+                tickUpper: (TickMath.MAX_TICK / spacing) * spacing,
+                amount0Desired: long < c.weth ? half : c.seedEth,
+                amount1Desired: long < c.weth ? c.seedEth : half,
+                amount0Min: 0,
+                amount1Min: 0,
+                recipient: c.deployer,
+                deadline: block.timestamp
+            })
+            );
+    }
+
+    /// @dev sqrtPriceX96 = sqrt(amount1 / amount0) * 2^96, computed at full
+    ///      precision as sqrt(amount1 * 2^192 / amount0).
+    function _encodeSqrtPriceX96(uint256 amount1, uint256 amount0) internal pure returns (uint160) {
+        uint256 ratioX192 = FullMath.mulDiv(amount1, 1 << 192, amount0);
+        uint256 s = _sqrt(ratioX192);
+        require(s <= type(uint160).max, "sqrtPrice overflow");
+        return uint160(s);
+    }
+
+    /// @dev Babylonian integer square root.
+    function _sqrt(uint256 x) internal pure returns (uint256 y) {
+        if (x == 0) return 0;
+        uint256 z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
     }
 }
