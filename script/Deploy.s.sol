@@ -8,38 +8,39 @@ import {LongToken} from "../src/LongToken.sol";
 import {PositionManager} from "../src/PositionManager.sol";
 import {UniswapV3TwapOracle} from "../src/oracle/UniswapV3TwapOracle.sol";
 import {UniswapV3LiquiditySink} from "../src/periphery/UniswapV3LiquiditySink.sol";
-import {INonfungiblePositionManager, IUniswapV3Pool, IWETH9} from "../src/interfaces/IUniswapV3.sol";
+import {INonfungiblePositionManager, IUniswapV3Pool} from "../src/interfaces/IUniswapV3.sol";
 import {FullMath} from "../src/libraries/FullMath.sol";
-import {TickMath} from "../src/libraries/TickMath.sol";
 
 /// @notice Deploys the Longbow contract suite to Robinhood Chain (or a fork),
 ///         using Uniswap **V3** for liquidity and pricing.
 ///
 /// Flow:
 ///   1. Deploy LONG with full supply minted to the deployer.
-///   2. Create + initialize the Uniswap V3 LONG/WETH pool at the genesis price
-///      P0 = SEED_ETH / (TOTAL_SUPPLY / 2), then grow its observation cardinality
-///      so the TWAP oracle has history to average over.
-///   3. Mint a full-range seed position (50% of supply + SEED_ETH). The LP NFT
-///      goes to the deployer (you keep and manage your own seed liquidity).
-///   4. Deploy the V3 TWAP oracle over the pool.
-///   5. Deploy the UniswapV3LiquiditySink (locks liquidated collateral forever).
-///   6. Deploy the PositionManager and transfer the remaining 50% as its reserve.
+///   2. Create + initialize the Uniswap V3 LONG/WETH pool at a chosen genesis
+///      price — **no ETH or LP is deposited by the deployer**.
+///        P0 (ETH per LONG) = GENESIS_FDV_ETH / TOTAL_SUPPLY
+///      e.g. GENESIS_FDV_ETH = 10 ETH → whole supply is priced at a 10 ETH FDV.
+///      Then grow the pool's observation cardinality for the TWAP oracle.
+///   3. Deploy the V3 TWAP oracle over the pool.
+///   4. Deploy the UniswapV3LiquiditySink (locks liquidated collateral forever).
+///   5. Deploy the PositionManager and transfer **50%** of supply as its reserve.
+///      The other 50% stays on the deployer for you to add as LP later (when you
+///      choose), via the Uniswap UI or a follow-up script.
 ///
 /// Required env:
-///   PRIVATE_KEY   deployer key
+///   PRIVATE_KEY   deployer key (only needs gas — no seed ETH)
 /// Optional env (sensible defaults shown in code — VERIFY the Uniswap V3
 /// addresses on Blockscout before broadcasting):
-///   TOTAL_SUPPLY, SEED_ETH, UNISWAP_V3_POSITION_MANAGER, UNISWAP_V3_SWAP_ROUTER,
-///   WETH, POOL_FEE, OBSERVATION_CARDINALITY, TWAP_PERIOD, MAX_MULTIPLIER_WAD,
-///   MAINTENANCE_MARGIN_BPS, LIQUIDATION_BOUNTY_BPS, MIN_COLLATERAL,
-///   SINK_SLIPPAGE_BPS
+///   TOTAL_SUPPLY, GENESIS_FDV_ETH, UNISWAP_V3_POSITION_MANAGER,
+///   UNISWAP_V3_SWAP_ROUTER, WETH, POOL_FEE, OBSERVATION_CARDINALITY,
+///   TWAP_PERIOD, MAX_MULTIPLIER_WAD, MAINTENANCE_MARGIN_BPS,
+///   LIQUIDATION_BOUNTY_BPS, MIN_COLLATERAL, SINK_SLIPPAGE_BPS
 contract Deploy is Script {
     struct Config {
         uint256 pk;
         address deployer;
         uint256 totalSupply;
-        uint256 seedEth;
+        uint256 genesisFdvEth;
         address positionManager;
         address swapRouter;
         address weth;
@@ -57,7 +58,9 @@ contract Deploy is Script {
         c.pk = vm.envUint("PRIVATE_KEY");
         c.deployer = vm.addr(c.pk);
         c.totalSupply = vm.envOr("TOTAL_SUPPLY", uint256(1_000_000_000 ether));
-        c.seedEth = vm.envOr("SEED_ETH", uint256(10 ether));
+        // Fully-diluted value of the whole supply at launch, in ETH wei.
+        // P0 = GENESIS_FDV_ETH / TOTAL_SUPPLY  (ETH per LONG).
+        c.genesisFdvEth = vm.envOr("GENESIS_FDV_ETH", uint256(10 ether));
 
         // Uniswap V3 on Robinhood Chain (4663) — VERIFY on Blockscout before use.
         c.positionManager = vm.envOr("UNISWAP_V3_POSITION_MANAGER", address(0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3));
@@ -76,13 +79,18 @@ contract Deploy is Script {
 
     function run() external {
         Config memory c = _config();
+        require(c.genesisFdvEth > 0, "GENESIS_FDV_ETH=0");
+        require(c.totalSupply > 0, "TOTAL_SUPPLY=0");
         uint256 half = c.totalSupply / 2;
+
+        // ETH per LONG, WAD: 1e18 means 1 LONG = 1 ETH.
+        uint256 priceWad = FullMath.mulDiv(c.genesisFdvEth, 1e18, c.totalSupply);
 
         vm.startBroadcast(c.pk);
 
         LongToken long = new LongToken(c.totalSupply, c.deployer);
 
-        address pool = _createAndSeedPool(c, address(long), half);
+        address pool = _createPoolAtPrice(c, address(long));
 
         UniswapV3TwapOracle oracle = new UniswapV3TwapOracle(pool, address(long), c.twapPeriod);
         UniswapV3LiquiditySink sink =
@@ -108,49 +116,27 @@ contract Deploy is Script {
         console2.log("LiquiditySink:   ", address(sink));
         console2.log("PositionManager: ", address(pm));
         console2.log("Reserve (LONG):  ", long.balanceOf(address(pm)));
+        console2.log("Deployer LONG:   ", long.balanceOf(c.deployer));
+        console2.log("Genesis FDV ETH: ", c.genesisFdvEth);
+        console2.log("Genesis P0 WAD:  ", priceWad);
     }
 
-    /// @dev Creates + initializes the V3 pool at the genesis price, grows the
-    ///      observation cardinality, and mints the full-range seed position.
-    function _createAndSeedPool(Config memory c, address long, uint256 half) internal returns (address pool) {
+    /// @dev Creates + initializes the V3 pool at P0 = GENESIS_FDV_ETH / TOTAL_SUPPLY.
+    ///      Does **not** mint any liquidity — price only. Grow observation cardinality
+    ///      so the TWAP oracle can retain history once trading starts.
+    function _createPoolAtPrice(Config memory c, address long) internal returns (address pool) {
         (address token0, address token1) = long < c.weth ? (long, c.weth) : (c.weth, long);
 
+        // Uniswap price is token1/token0. We want ETH per LONG = P0.
+        // LONG = token0 → ratio = WETH/LONG = P0 → amount1/amount0 = FDV/SUPPLY
+        // WETH = token0 → ratio = LONG/WETH = 1/P0 → amount1/amount0 = SUPPLY/FDV
+        uint160 sqrtPriceX96 = long < c.weth
+            ? _encodeSqrtPriceX96(c.genesisFdvEth, c.totalSupply)
+            : _encodeSqrtPriceX96(c.totalSupply, c.genesisFdvEth);
+
         pool = INonfungiblePositionManager(c.positionManager)
-            .createAndInitializePoolIfNecessary(
-                token0,
-                token1,
-                c.poolFee,
-                long < c.weth ? _encodeSqrtPriceX96(c.seedEth, half) : _encodeSqrtPriceX96(half, c.seedEth)
-            );
+            .createAndInitializePoolIfNecessary(token0, token1, c.poolFee, sqrtPriceX96);
         IUniswapV3Pool(pool).increaseObservationCardinalityNext(c.observationCardinality);
-
-        _mintSeedPosition(c, long, half, pool);
-    }
-
-    /// @dev Wraps the seed ETH and mints the full-range seed position to the deployer.
-    function _mintSeedPosition(Config memory c, address long, uint256 half, address pool) internal {
-        IWETH9(c.weth).deposit{value: c.seedEth}();
-        IERC20(long).approve(c.positionManager, half);
-        IERC20(c.weth).approve(c.positionManager, c.seedEth);
-
-        int24 spacing = IUniswapV3Pool(pool).tickSpacing();
-
-        INonfungiblePositionManager(c.positionManager)
-            .mint(
-                INonfungiblePositionManager.MintParams({
-                token0: long < c.weth ? long : c.weth,
-                token1: long < c.weth ? c.weth : long,
-                fee: c.poolFee,
-                tickLower: (TickMath.MIN_TICK / spacing) * spacing,
-                tickUpper: (TickMath.MAX_TICK / spacing) * spacing,
-                amount0Desired: long < c.weth ? half : c.seedEth,
-                amount1Desired: long < c.weth ? c.seedEth : half,
-                amount0Min: 0,
-                amount1Min: 0,
-                recipient: c.deployer,
-                deadline: block.timestamp
-            })
-            );
     }
 
     /// @dev sqrtPriceX96 = sqrt(amount1 / amount0) * 2^96, computed at full

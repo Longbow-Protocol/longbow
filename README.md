@@ -84,7 +84,7 @@ forge script script/Deploy.s.sol --rpc-url <rpc> --private-key <key> --broadcast
 ```bash
 cd frontend
 npm install
-cp .env.local.example .env.local   # fill in deployed contract addresses
+cp .env.local.example .env.local   # optional overrides (mainnet defaults are baked in)
 npm run dev                         # http://localhost:3000
 ```
 
@@ -97,6 +97,18 @@ npm start                           # interactive menu
 ```
 
 > Clone with `git clone --recurse-submodules` if you plan to build the contracts.
+
+## Deployments
+
+Robinhood Chain (chain id `4663`):
+
+| Contract | Address |
+| --- | --- |
+| `LongToken` | [`0x3F29C51aAE41De14e062A8aA129cB928d277d58e`](https://robinhoodchain.blockscout.com/address/0x3F29C51aAE41De14e062A8aA129cB928d277d58e) |
+| `PositionManager` | [`0x326B88686F1c3d875e8aCC5A841658561c6baA65`](https://robinhoodchain.blockscout.com/address/0x326B88686F1c3d875e8aCC5A841658561c6baA65) |
+| `UniswapV3TwapOracle` | [`0x95022e077CF330231C559AdbB0c9a2d5DC11283d`](https://robinhoodchain.blockscout.com/address/0x95022e077CF330231C559AdbB0c9a2d5DC11283d) |
+| `UniswapV3LiquiditySink` | [`0x6724ba74045817942976181c1e4a0dbc4FB18b06`](https://robinhoodchain.blockscout.com/address/0x6724ba74045817942976181c1e4a0dbc4FB18b06) |
+| Uniswap V3 Pool (`LONG`/`WETH`, 1%) | [`0x112f9E5B61fE98546F9Fd527d6953AB240118bf0`](https://robinhoodchain.blockscout.com/address/0x112f9E5B61fE98546F9Fd527d6953AB240118bf0) |
 
 ## Security
 

@@ -68,17 +68,16 @@ To build locally instead: `npm run build` (npm/npx package) or, with
 
 ## Configuration
 
-Copy `.env.example` to `.env` and fill in the deployed contract addresses:
+Mainnet addresses are baked into the CLI. To override locally, copy `.env.example` to `.env`:
 
 ```
-LONGBOW_POSITION_MANAGER=0x...
-LONGBOW_LONG_TOKEN=0x...
-LONGBOW_ORACLE=0x...
+LONGBOW_POSITION_MANAGER=0x326B88686F1c3d875e8aCC5A841658561c6baA65
+LONGBOW_LONG_TOKEN=0x3F29C51aAE41De14e062A8aA129cB928d277d58e
+LONGBOW_ORACLE=0x95022e077CF330231C559AdbB0c9a2d5DC11283d
 LONGBOW_RPC_URL=https://rpc.mainnet.chain.robinhood.com
 ```
 
-Until addresses are set, read commands report that contracts aren't deployed
-yet. The `how`, `jan`, and `ethos` sections work with no configuration at all.
+The `how`, `jan`, and `ethos` sections work with no configuration at all.
 
 ## Security — how your private key is handled
 
