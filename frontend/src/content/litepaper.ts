@@ -29,7 +29,7 @@ export function parseRuns(text: string): Run[] {
 
 export const LITEPAPER_META = {
   title: "The Longbow Litepaper",
-  version: "VERSION 0.1",
+  version: "VERSION 0.2",
   chain: "ROBINHOOD CHAIN · ID 4663",
   status: "STATUS: DRAFT",
   intro:
@@ -64,8 +64,8 @@ export const SECTIONS: Section[] = [
       {
         type: "list",
         items: [
-          "50% seeds the $LONG / WETH Uniswap V3 pool (1% fee tier) as a full-range position, establishing the market price.",
           "50% is transferred to the position contract, where it forms the reward reserve that pays profitable longs.",
+          "50% remains with the deployer to seed the $LONG / WETH Uniswap V3 pool (1% fee tier) as liquidity at launch. The pool itself is created and initialized at a genesis price at deploy time; the LP position is added separately when liquidity is launched.",
         ],
       },
       {
@@ -333,8 +333,33 @@ export const SECTIONS: Section[] = [
     ],
   },
   {
-    id: "risks",
+    id: "deployments",
     n: "16",
+    title: "Deployments",
+    blocks: [
+      {
+        type: "p",
+        text: "The Longbow suite is deployed on Robinhood Chain (chain id 4663). Addresses below are the canonical mainnet deployment:",
+      },
+      {
+        type: "list",
+        items: [
+          "`LongToken` — `0x3F29C51aAE41De14e062A8aA129cB928d277d58e`",
+          "`PositionManager` — `0x326B88686F1c3d875e8aCC5A841658561c6baA65`",
+          "`UniswapV3TwapOracle` — `0x95022e077CF330231C559AdbB0c9a2d5DC11283d`",
+          "`UniswapV3LiquiditySink` — `0x6724ba74045817942976181c1e4a0dbc4FB18b06`",
+          "Uniswap V3 pool (`LONG` / `WETH`, 1% fee) — `0x112f9E5B61fE98546F9Fd527d6953AB240118bf0`",
+        ],
+      },
+      {
+        type: "p",
+        text: "Verify contracts and transactions on the Robinhood Chain Blockscout explorer. Source is published at github.com/Longbow-Finance/contracts.",
+      },
+    ],
+  },
+  {
+    id: "risks",
+    n: "17",
     title: "Risk factors",
     blocks: [
       {
@@ -351,7 +376,7 @@ export const SECTIONS: Section[] = [
   },
   {
     id: "disclaimer",
-    n: "17",
+    n: "18",
     title: "Disclaimer",
     blocks: [
       {
