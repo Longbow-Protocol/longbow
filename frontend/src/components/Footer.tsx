@@ -39,6 +39,7 @@ export function Footer() {
           <FooterCol title="PROTOCOL">
             <FooterLink href="/dashboard">Dashboard</FooterLink>
             <FooterLink href="/#how">How it works</FooterLink>
+            <FooterLink href="/lp-lock">The LP Lock</FooterLink>
             <FooterLink href="/#start">Get started</FooterLink>
           </FooterCol>
 

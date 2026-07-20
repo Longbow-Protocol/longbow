@@ -7,6 +7,8 @@ const MAINNET = {
   positionManager: "0x326B88686F1c3d875e8aCC5A841658561c6baA65",
   long: "0x3F29C51aAE41De14e062A8aA129cB928d277d58e",
   oracle: "0x95022e077CF330231C559AdbB0c9a2d5DC11283d",
+  /** Set after UniswapV3LpLocker is deployed. */
+  lpLocker: ZERO,
 } as const;
 
 function envAddress(value: string | undefined, fallback: Address): Address {
@@ -21,6 +23,7 @@ export const addresses = {
   ),
   long: envAddress(process.env.NEXT_PUBLIC_LONG_TOKEN, MAINNET.long),
   oracle: envAddress(process.env.NEXT_PUBLIC_ORACLE, MAINNET.oracle),
+  lpLocker: envAddress(process.env.NEXT_PUBLIC_LP_LOCKER, MAINNET.lpLocker),
 } as const;
 
 export function isConfigured(addr: Address): boolean {

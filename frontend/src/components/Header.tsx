@@ -48,6 +48,9 @@ export function Header() {
             <Link className="label hover:text-[var(--color-long)]" href="/#how">
               HOW IT WORKS
             </Link>
+            <Link className="label hover:text-[var(--color-long)]" href="/lp-lock">
+              LP LOCK
+            </Link>
             <Link className="label hover:text-[var(--color-long)]" href="/#start">
               GET STARTED
             </Link>

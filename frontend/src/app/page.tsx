@@ -33,6 +33,9 @@ export default function Home() {
             <Link href="#how" className="btn flex items-center gap-2 px-5 py-3">
               HOW IT WORKS
             </Link>
+            <Link href="/lp-lock" className="btn flex items-center gap-2 px-5 py-3">
+              THE LP LOCK
+            </Link>
           </div>
           <div className="mt-6">
             <TokenAddress />
