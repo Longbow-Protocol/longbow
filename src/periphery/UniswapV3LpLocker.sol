@@ -58,10 +58,7 @@ contract UniswapV3LpLocker {
 
         (amount0, amount1) = positionManager.collect(
             INonfungiblePositionManager.CollectParams({
-                tokenId: id,
-                recipient: owner,
-                amount0Max: type(uint128).max,
-                amount1Max: type(uint128).max
+                tokenId: id, recipient: owner, amount0Max: type(uint128).max, amount1Max: type(uint128).max
             })
         );
         emit Claimed(amount0, amount1);
